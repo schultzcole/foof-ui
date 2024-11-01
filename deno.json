@@ -1,0 +1,11 @@
+{
+    "workspace": ["./core", "./examples/basic-example"],
+    "compilerOptions": {
+        "lib": ["ES2020", "DOM", "DOM.Iterable", "deno.ns"]
+    },
+    "fmt": {
+        "semiColons": false,
+        "indentWidth": 4,
+        "lineWidth": 120
+    }
+}
