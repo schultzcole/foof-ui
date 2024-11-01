@@ -79,9 +79,9 @@ export function ambientEffect(func: () => void): void {
     captureContext.ctx?._addAmbientCapture(func, captureContext.capturedPaths)
 }
 
-class NestedAmbientCaptureError extends Error {
+export class NestedAmbientCaptureError extends Error {
     constructor() {
-        super("Nested calls to ambientCapture are not allowed")
+        super("Nested calls to ambientEffect are not allowed")
         this.name = "NestedAmbientCaptureError"
     }
 }
