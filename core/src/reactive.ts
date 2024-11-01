@@ -49,7 +49,7 @@ function handlerForContext<T extends Reactiveable, TRoot extends Reactiveable>(
             }
             return value
         },
-        set(target: T, prop: keyof T & (string | symbol), value: any) {
+        set<K extends keyof T & (string | symbol)>(target: T, prop: K, value: T[K]) {
             if (prop === REACTIVE_CONTEXT) return false
 
             const thisPath = parentPath + `[${prop.toString()}]`
