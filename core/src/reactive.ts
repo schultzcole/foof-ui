@@ -35,7 +35,7 @@ function handlerForContext<T extends Reactiveable, TRoot extends Reactiveable>(
 
             const thisPath = parentPath + `[${prop.toString()}]`
 
-            ctx.register(thisPath)
+            ctx._register(thisPath)
             if (ambientEffectContext) {
                 if (ambientEffectContext.ctx && ambientEffectContext.ctx !== ctx) throw new Error()
                 ambientEffectContext.ctx ??= ctx
@@ -54,7 +54,7 @@ function handlerForContext<T extends Reactiveable, TRoot extends Reactiveable>(
 
             const thisPath = parentPath + `[${prop.toString()}]`
             target[prop] = value
-            ctx.trigger(thisPath)
+            ctx._trigger(thisPath)
             return true
         },
     }
@@ -107,7 +107,7 @@ export class ReactiveContext {
      * Registers a get at the given path, if this reactive context has an active frame
      * @internal
      */
-    register(path: string): void {
+    _register(path: string): void {
         this.activeCaptures?.add(path)
     }
 
@@ -115,7 +115,7 @@ export class ReactiveContext {
      * Registers a set at the given path, triggering any frames that depend on this path
      * @internal
      */
-    trigger(path: string): void {
+    _trigger(path: string): void {
         // TODO trigger in the microtask queue so that multiple simultaneous state changes result in a single "re-render"
         if (!this.triggerMap.has(path)) return
         const frameIds = this.triggerMap.get(path)!
