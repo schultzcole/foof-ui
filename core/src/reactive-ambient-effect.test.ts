@@ -3,9 +3,9 @@ import { assertEquals, assertThrows } from "@std/assert"
 import { describe, it } from "@std/testing/bdd"
 
 describe("ambientEffect", () => {
-    it("should register contents with appropriate ReactiveContext", () => {
+    it("should register contents with appropriate ReactiveContext", async () => {
         const obj = { foo: "bar" }
-        const { state } = reactive(obj)
+        const { state, ctx } = reactive(obj)
 
         const fooValues: string[] = []
         ambientEffect(() => {
@@ -13,6 +13,7 @@ describe("ambientEffect", () => {
         })
 
         state.foo = "baz"
+        await ctx.completeEffects()
 
         assertEquals(fooValues, ["bar", "baz"])
     })
