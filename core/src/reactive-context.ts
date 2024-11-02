@@ -4,7 +4,9 @@ export type EffectOptions = {
     triggerMode?: TriggerMode
 }
 
-/** */
+/**
+ * Responsible for tracking "frames" that use its corresponding state and re-executing those frames when the state changes.
+ */
 export class ReactiveContext {
     private activeFrame: CaptureFrame | null = null
     private activeCaptures: Set<string> | null = null
@@ -17,6 +19,27 @@ export class ReactiveContext {
     private immediateTriggerMap = new Map<string, Set<number>>()
     private queuePromise: Promise<void> | null = null
     private queuedTriggerPaths = new Set<string>()
+
+    /**
+     * Capture state accesses within the given function. When any state used in the function is mutated, the function will be called again.
+     * @remarks
+     * The default behavior of effect is that when any of the captured state used in the function is mutated, the function will be
+     * queued to be called in a batch to reduce duplicate updates. You can override this behavior and execute immediately by passing immediate = true.
+     * @param immediate whether the effect function will be called immediately upon any captured state being mutated.
+     */
+    effect(func: () => void, { triggerMode = "async" }: EffectOptions = {}): void {
+        const captureFrame = this.createCaptureFrame(func, triggerMode ?? "async")
+        this.capture(captureFrame)
+    }
+
+    /**
+     * Returns a Promise that will resolve when any enqueued effect triggers have completed.
+     * @remarks In general, you shouldn't need to call this in normal app code
+     * @returns true if any effect triggers were enqueued, otherwise false
+     */
+    completeEffects(): Promise<boolean> {
+        return this.queuePromise?.then(() => true) ?? Promise.resolve(false)
+    }
 
     /**
      * Registers a get at the given path, if this reactive context has an active frame
@@ -49,24 +72,20 @@ export class ReactiveContext {
     }
 
     /**
-     * Capture state accesses within the given function. When any state used in the function is mutated, the function will be called again.
-     * @remarks
-     * The default behavior of effect is that when any of the captured state used in the function is mutated, the function will be
-     * queued to be called in a batch to reduce duplicate updates. You can override this behavior and execute immediately by passing immediate = true.
-     * @param immediate whether the effect function will be called immediately upon any captured state being mutated.
+     * Register a new frame with pre-captured paths from an ambient effect.
+     * @internal
      */
-    effect(func: () => void, { triggerMode = "async" }: EffectOptions = {}): void {
-        const captureFrame = this.createCaptureFrame(func, triggerMode ?? "async")
-        this.capture(captureFrame)
+    _addAmbientCapture(func: () => void, capturedPaths: Set<string>) {
+        const captureFrame = this.createCaptureFrame(func, "async")
+        this.subscribeFrameToPaths(captureFrame, capturedPaths)
     }
 
-    /**
-     * Returns a Promise that will resolve when any enqueued effect triggers have completed.
-     * @remarks In general, you shouldn't need to call this in normal app code
-     * @returns true if any effect triggers were enqueued, otherwise false
-     */
-    completeEffects(): Promise<boolean> {
-        return this.queuePromise?.then(() => true) ?? Promise.resolve(false)
+    /** Creates a new capture frame with the given function, registers ancestors and descendants */
+    private createCaptureFrame(func: () => void, triggerMode: TriggerMode): CaptureFrame {
+        const captureFrame = new CaptureFrame(this.activeFrame?.id ?? null, func, triggerMode)
+        this.populateAncestorsAndDescendants(captureFrame)
+        this.frameMap.set(captureFrame.id, captureFrame)
+        return captureFrame
     }
 
     /** Executes the given capture frame, capturing accessed state paths, then subscribing the frame to the captured paths. */
@@ -89,23 +108,6 @@ export class ReactiveContext {
         this.subscribeFrameToPaths(captureFrame, capturedPaths)
 
         return capturedPaths
-    }
-
-    /**
-     * Register a new frame with pre-captured paths from an ambient effect.
-     * @internal
-     */
-    _addAmbientCapture(func: () => void, capturedPaths: Set<string>) {
-        const captureFrame = this.createCaptureFrame(func, "async")
-        this.subscribeFrameToPaths(captureFrame, capturedPaths)
-    }
-
-    /** Creates a new capture frame with the given function, registers ancestors and descendants */
-    private createCaptureFrame(func: () => void, triggerMode: TriggerMode): CaptureFrame {
-        const captureFrame = new CaptureFrame(this.activeFrame?.id ?? null, func, triggerMode)
-        this.populateAncestorsAndDescendants(captureFrame)
-        this.frameMap.set(captureFrame.id, captureFrame)
-        return captureFrame
     }
 
     /** Given a frame and set of captured paths, registers the frame to be executed when the given paths are triggered */
@@ -183,7 +185,7 @@ export class ReactiveContext {
         this.descendantsMap.set(ancestorId, newDescendants)
     }
 
-    /** Triggers effects dependent on all enqueued paths */
+    /** Executes async frames for paths that have been enqueued */
     private consumeTriggerQueue() {
         const paths = Array.from(this.queuedTriggerPaths)
         this.queuedTriggerPaths.clear()
