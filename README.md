@@ -1,2 +1,3 @@
-# foof-ui
-A small framework for creating reactive UIs
+# FOOF UI
+
+A small framework for creating reactive UIs.
