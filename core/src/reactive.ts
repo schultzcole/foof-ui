@@ -90,18 +90,29 @@ class CaptureFrame {
     private static frameNumber = 0
 
     id: number
-    constructor(public parentId: number | null, public func: () => void) {
+    constructor(public parentId: number | null, public func: () => void, public triggerMode: TriggerMode) {
         this.id = ++CaptureFrame.frameNumber
     }
+}
+
+export type TriggerMode = "sync" | "async"
+
+export type EffectOptions = {
+    triggerMode?: TriggerMode
 }
 
 export class ReactiveContext {
     private activeFrame: CaptureFrame | null = null
     private activeCaptures: Set<string> | null = null
-    private triggerMap = new Map<string, Set<number>>()
+
     private frameMap = new Map<number, CaptureFrame>()
     private descendantsMap = new Map<number, Set<number>>()
     private ancestorsMap = new Map<number, Set<number>>()
+
+    private asyncTriggerMap = new Map<string, Set<number>>()
+    private immediateTriggerMap = new Map<string, Set<number>>()
+    private queuePromise: Promise<void> | null = null
+    private queuedTriggerPaths = new Set<string>()
 
     /**
      * Registers a get at the given path, if this reactive context has an active frame
@@ -116,25 +127,42 @@ export class ReactiveContext {
      * @internal
      */
     _trigger(path: string): void {
-        // TODO trigger in the microtask queue so that multiple simultaneous state changes result in a single "re-render"
-        if (!this.triggerMap.has(path)) return
-        const frameIds = this.triggerMap.get(path)!
-        this.triggerMap.delete(path)
+        if (this.immediateTriggerMap.has(path)) {
+            const frameIds = this.immediateTriggerMap.get(path)!
+            this.executeFrames(frameIds)
+        }
 
-        if (!frameIds.size) return
-
-        for (const id of frameIds) {
-            const frame = this.frameMap.get(id)
-            if (!frame) continue
-            this.clearFrame(frame)
-            this.capture(frame)
+        if (this.asyncTriggerMap.has(path)) {
+            this.queuedTriggerPaths.add(path)
+            this.queuePromise ??= new Promise((resolve) => {
+                queueMicrotask(() => {
+                    this.consumeTriggerQueue()
+                    this.queuePromise = null
+                    resolve()
+                })
+            })
         }
     }
 
-    /** Capture state accesses within the given function. When any state used in the function is mutated, the function will be called again. */
-    effect(func: () => void): void {
-        const captureFrame = this.createCaptureFrame(func)
+    /**
+     * Capture state accesses within the given function. When any state used in the function is mutated, the function will be called again.
+     * @remarks
+     * The default behavior of effect is that when any of the captured state used in the function is mutated, the function will be
+     * queued to be called in a batch to reduce duplicate updates. You can override this behavior and execute immediately by passing immediate = true.
+     * @param immediate whether the effect function will be called immediately upon any captured state being mutated.
+     */
+    effect(func: () => void, { triggerMode = "async" }: EffectOptions = {}): void {
+        const captureFrame = this.createCaptureFrame(func, triggerMode ?? "async")
         this.capture(captureFrame)
+    }
+
+    /**
+     * Returns a Promise that will resolve when any enqueued effect triggers have completed.
+     * @remarks In general, you shouldn't need to call this in normal app code
+     * @returns true if any effect triggers were enqueued, otherwise false
+     */
+    completeEffects(): Promise<boolean> {
+        return this.queuePromise?.then(() => true) ?? Promise.resolve(false)
     }
 
     /** Executes the given capture frame, capturing accessed state paths, then subscribing the frame to the captured paths. */
@@ -164,13 +192,13 @@ export class ReactiveContext {
      * @internal
      */
     _addAmbientCapture(func: () => void, capturedPaths: Set<string>) {
-        const captureFrame = this.createCaptureFrame(func)
+        const captureFrame = this.createCaptureFrame(func, "async")
         this.subscribeFrameToPaths(captureFrame, capturedPaths)
     }
 
     /** Creates a new capture frame with the given function, registers ancestors and descendants */
-    private createCaptureFrame(func: () => void): CaptureFrame {
-        const captureFrame = new CaptureFrame(this.activeFrame?.id ?? null, func)
+    private createCaptureFrame(func: () => void, triggerMode: TriggerMode): CaptureFrame {
+        const captureFrame = new CaptureFrame(this.activeFrame?.id ?? null, func, triggerMode)
         this.populateAncestorsAndDescendants(captureFrame)
         this.frameMap.set(captureFrame.id, captureFrame)
         return captureFrame
@@ -178,26 +206,15 @@ export class ReactiveContext {
 
     /** Given a frame and set of captured paths, registers the frame to be executed when the given paths are triggered */
     private subscribeFrameToPaths(frame: CaptureFrame, capturedPaths: Set<string>) {
-        const frameAncestors = this.ancestorsMap.get(frame.id)!
-        const frameDescendants = this.descendantsMap.get(frame.id)
+        const triggerMap = (frame.triggerMode == "sync") ? this.immediateTriggerMap : this.asyncTriggerMap
         for (const path of capturedPaths) {
-            if (this.triggerMap.has(path)) {
-                const existingFrames = this.triggerMap.get(path)!
+            if (triggerMap.has(path)) {
+                const existingFrames = triggerMap.get(path)!
 
-                if (existingFrames.intersection(frameAncestors).size) {
-                    // an ancestor is already subscribed to this trigger, skip
-                    continue
-                }
-
-                // subscribe this frame to this trigger...
-                existingFrames.add(frame.id)
-
-                // and remove any of this frame's descendants from this trigger.
-                if (frameDescendants) {
-                    this.triggerMap.set(path, existingFrames.difference(frameDescendants))
-                }
+                const mutatedFrames = this.ensureAncestor(existingFrames, frame.id)
+                triggerMap.set(path, mutatedFrames)
             } else {
-                this.triggerMap.set(path, new Set([frame.id]))
+                triggerMap.set(path, new Set([frame.id]))
             }
         }
     }
@@ -226,13 +243,13 @@ export class ReactiveContext {
         this.descendantsMap.delete(frameId)
 
         // Clear any triggers for this frame and its descendants
-        for (const key of this.triggerMap.keys()) {
-            let set = this.triggerMap.get(key)!
+        for (const key of this.asyncTriggerMap.keys()) {
+            let set = this.asyncTriggerMap.get(key)!
             if (descendants) {
                 set = set.difference(descendants)
             }
             set.delete(frameId)
-            this.triggerMap.set(key, set)
+            this.asyncTriggerMap.set(key, set)
         }
 
         if (!descendants) return
@@ -260,5 +277,55 @@ export class ReactiveContext {
 
         const newDescendants = descendants.difference(descendantsToClear)
         this.descendantsMap.set(ancestorId, newDescendants)
+    }
+
+    /** Triggers effects dependent on all enqueued paths */
+    private consumeTriggerQueue() {
+        const paths = Array.from(this.queuedTriggerPaths)
+        this.queuedTriggerPaths.clear()
+
+        const frameIds = new Set<number>()
+        for (const path of paths) {
+            const pathFrameIds = this.asyncTriggerMap.get(path)!
+            this.asyncTriggerMap.delete(path)
+            for (const pathFrameId of pathFrameIds) {
+                this.ensureAncestor(frameIds, pathFrameId)
+            }
+        }
+        this.executeFrames(frameIds)
+    }
+
+    /** Executes the frames with the given IDs. */
+    private executeFrames(frameIds: Set<number>): void {
+        for (const id of frameIds) {
+            const frame = this.frameMap.get(id)
+            if (!frame) continue
+            this.clearFrame(frame)
+            this.capture(frame)
+        }
+    }
+
+    /**
+     * Given a set of frameIds and a frameId:
+     * - if an ancestor of the given frameId is already in the set, do nothing
+     * - Otherwise, add the given frameId to the set and ensure none of its children are in the set
+     */
+    private ensureAncestor(frameIds: Set<number>, frameId: number): Set<number> {
+        const frameAncestors = this.ancestorsMap.get(frameId)!
+        const frameDescendants = this.descendantsMap.get(frameId)
+
+        if (frameIds.intersection(frameAncestors).size) {
+            // an ancestor is already subscribed to this trigger, skip
+            return frameIds
+        }
+
+        // subscribe this frame to this trigger...
+        frameIds.add(frameId)
+
+        // and remove any of this frame's descendants from this trigger.
+        if (frameDescendants) {
+            frameIds = frameIds.difference(frameDescendants)
+        }
+        return frameIds
     }
 }
