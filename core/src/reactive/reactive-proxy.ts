@@ -1,4 +1,4 @@
-import { ReactiveContext } from "./reactive-context.ts"
+import ReactiveContext from "./reactive-context.ts"
 
 const REACTIVE_CONTEXT = Symbol("REACTIVE_CONTEXT")
 

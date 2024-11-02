@@ -7,7 +7,7 @@ export type EffectOptions = {
 /**
  * Responsible for tracking "frames" that use its corresponding state and re-executing those frames when the state changes.
  */
-export class ReactiveContext {
+export default class ReactiveContext {
     private activeFrame: CaptureFrame | null = null
     private activeCaptures: Set<string> | null = null
 
