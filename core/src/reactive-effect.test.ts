@@ -1,4 +1,4 @@
-import { reactive } from "./reactive.ts"
+import { reactive } from "./reactive-proxy.ts"
 import { assertEquals } from "@std/assert"
 import { describe, it } from "@std/testing/bdd"
 

@@ -1,4 +1,4 @@
-import { _ambientEffect, NestedAmbientCaptureError, reactive } from "./reactive.ts"
+import { _ambientEffect, NestedAmbientCaptureError, reactive } from "./reactive-proxy.ts"
 import { assertEquals, assertThrows } from "@std/assert"
 import { describe, it } from "@std/testing/bdd"
 
