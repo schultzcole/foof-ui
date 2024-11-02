@@ -1,4 +1,4 @@
-import { ambientEffect, NestedAmbientCaptureError, reactive } from "./reactive.ts"
+import { _ambientEffect, NestedAmbientCaptureError, reactive } from "./reactive.ts"
 import { assertEquals, assertThrows } from "@std/assert"
 import { describe, it } from "@std/testing/bdd"
 
@@ -8,7 +8,7 @@ describe("ambientEffect", () => {
         const { state, ctx } = reactive(obj)
 
         const fooValues: string[] = []
-        ambientEffect(() => {
+        _ambientEffect(() => {
             fooValues.push(state.foo)
         })
 
@@ -20,7 +20,7 @@ describe("ambientEffect", () => {
 
     it("should throw when called within another ambientEffect", () => {
         assertThrows(() => {
-            ambientEffect(() => ambientEffect(() => {}))
+            _ambientEffect(() => _ambientEffect(() => {}))
         }, NestedAmbientCaptureError)
     })
 })
