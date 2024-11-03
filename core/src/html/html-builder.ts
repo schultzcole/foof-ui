@@ -93,19 +93,19 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/style
      * @param styles the styles to add
      */
-    style(styles: CssAttrs): this {
-        for (const [key, value] of Object.entries(styles)) {
-            this.element.style.setProperty(key, value)
-        }
+    style(styles: Partial<CssAttrs>): this {
+        Object.assign(this.element.style, styles)
         return this
     }
 
     /**
-     * Sets the given custom css properties on this element.
-     * @param vars
+     * Sets the given css on this element.
+     * This will do no conversion of property keys (unlike {@link style}), so it is appropriate for custom css properties.
+     * @param props the css properties to add
      */
-    cssVars(vars: Record<`--${string}`, string>): this {
-        for (const [key, value] of Object.entries(vars)) {
+    css(props: Record<string, string>): this {
+        this.element.style.webkitTextStroke
+        for (const [key, value] of Object.entries(props)) {
             this.element.style.setProperty(key, value)
         }
         return this
