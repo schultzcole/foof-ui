@@ -32,4 +32,31 @@ describe("HtmlBuilder", () => {
 
         assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
     })
+
+    it("should build data attrs correctly", () => {
+        const builder = new HtmlBuilder("div")
+        builder.data({ someData: "blah", someBooleanData: true })
+        builder.mount(document.body)
+
+        assertEquals(document.body.innerHTML, `<div data-some-data="blah" data-some-boolean-data="true"></div>`)
+    })
+
+    it("should build inline styles correctly", () => {
+        const builder = new HtmlBuilder("div")
+        builder.style({ backgroundColor: "red", marginLeft: "10px" })
+        builder.mount(document.body)
+
+        assertEquals(
+            document.body.innerHTML,
+            `<div style="background-color: red; margin-left: 10px;"></div>`,
+        )
+    })
+
+    it("should build custom css properties correctly", () => {
+        const builder = new HtmlBuilder("div")
+        builder.css({ "--my-css-var": "10px" })
+        builder.mount(document.body)
+
+        assertEquals(document.body.innerHTML, `<div style="--my-css-var: 10px;"></div>`)
+    })
 })
