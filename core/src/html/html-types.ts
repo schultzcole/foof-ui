@@ -1,4 +1,3 @@
-import type { Properties } from "csstype"
 import type { OmitFunctions, OmitReadonly } from "../util/types.ts"
 
 /** An HTML element type string (lowercase) */
@@ -20,4 +19,4 @@ export type HtmlEventListener<TEvent extends Event> = (evt: TEvent) => void
 export type HtmlElementAttrs<TTag extends HtmlTag = HtmlTag> = OmitReadonly<OmitFunctions<HtmlElement<TTag>>>
 
 /** Valid CSS attributes */
-export type CssAttrs = Properties
+export type CssAttrs = OmitReadonly<OmitFunctions<CSSStyleDeclaration>>

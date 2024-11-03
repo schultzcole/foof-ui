@@ -11,7 +11,6 @@
     "npm:@happy-dom/global-registrator@^15.8.0": "15.8.0",
     "npm:@types/node@*": "22.5.4",
     "npm:create-vite-extra@latest": "2.4.1",
-    "npm:csstype@^3.1.3": "3.1.3",
     "npm:happy-dom@^15.8.0": "15.8.0",
     "npm:type-fest@^4.26.1": "4.26.1",
     "npm:vite@*": "5.4.10",
@@ -261,9 +260,6 @@
         "prompts"
       ]
     },
-    "csstype@3.1.3": {
-      "integrity": "sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw=="
-    },
     "debug@4.3.7": {
       "integrity": "sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==",
       "dependencies": [
@@ -497,17 +493,14 @@
     }
   },
   "workspace": {
-    "dependencies": [
-      "npm:@happy-dom/global-registrator@^15.8.0",
-      "npm:csstype@^3.1.3",
-      "npm:happy-dom@^15.8.0",
-      "npm:type-fest@^4.26.1"
-    ],
     "members": {
       "core": {
         "dependencies": [
           "jsr:@std/assert@1",
-          "jsr:@std/testing@^1.0.3"
+          "jsr:@std/testing@^1.0.3",
+          "npm:@happy-dom/global-registrator@^15.8.0",
+          "npm:happy-dom@^15.8.0",
+          "npm:type-fest@^4.26.1"
         ]
       },
       "examples/basic-example": {
