@@ -51,8 +51,8 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
             // deno-lint-ignore no-explicit-any -- just let the element handle whatever gets passed
             this.element[key as keyof HtmlElement<TTag>] = value as any
         } else if (value) {
-            // @ts-expect-error -- just let the element handle whatever gets passed
-            this.element.setAttribute(key, value)
+            // deno-lint-ignore no-explicit-any -- just let the element handle whatever gets passed
+            this.element.setAttribute(key, value as any)
         } else {
             this.element.removeAttribute(key)
         }
