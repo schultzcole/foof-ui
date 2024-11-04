@@ -76,8 +76,20 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      */
     data(key: string, value: AnyData): this
 
-    data(keyOrObj: Record<string, AnyData> | string, value?: AnyData): this {
+    /**
+     * Sets a specific data attribute on this element to the return value of the given function.
+     * The attribute name will be converted according to the `dataset` name conversion rules.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset#name_conversion
+     * @param key the data attribute key to add
+     * @param value the value to add to the dataset
+     */
+    data(key: string, value: () => AnyData): this
+
+    data(keyOrObj: Record<string, AnyData> | string, value?: AnyData | (() => AnyData)): this {
         if (typeof keyOrObj === "string") {
+            if (typeof value === "function") {
+                value = value()
+            }
             this.element.dataset[keyOrObj] = stringify(value)
         } else {
             for (const [key, value] of Object.entries(keyOrObj)) {
