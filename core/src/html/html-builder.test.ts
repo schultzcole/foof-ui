@@ -158,4 +158,16 @@ describe("HtmlBuilder", () => {
             assertEquals(document.body.innerHTML, `<div style="--my-css-var: 10px;"></div>`)
         })
     })
+
+    describe("template builder", () => {
+        it("should add children of template to parent on mount", () => {
+            const builder = new HtmlBuilder("template")
+            builder
+                .tag("div", (div) => div.attr("id", "one"))
+                .tag("div", (div) => div.attr("id", "two"))
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, `<div id="one"></div><div id="two"></div>`)
+        })
+    })
 })

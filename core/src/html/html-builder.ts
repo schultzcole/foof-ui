@@ -278,7 +278,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * @param mountElement the html element into which to mount this element
      */
     mount(mountElement: HTMLElement) {
-        if (this.element.tagName === "TEMPLATE" && "content" in this.element) {
+        if (this.element instanceof HTMLTemplateElement) {
             mountElement.appendChild(this.element.content)
         } else {
             mountElement.appendChild(this.element)
