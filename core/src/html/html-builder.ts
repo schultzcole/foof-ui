@@ -99,6 +99,25 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         return this
     }
 
+    /** Adds the given class to this element. */
+    class(className: string): this
+
+    /** Adds the given class to this element if `force` is true */
+    class(className: string, force: boolean): this
+
+    /** Adds the given class to this element if `force` returns true */
+    class(className: string, force: () => boolean): this
+
+    class(className: string, force?: boolean | (() => boolean)): this {
+        if (typeof force === "function") {
+            force = force()
+        } else {
+            force ??= true
+        }
+        this.element.classList.toggle(className, force)
+        return this
+    }
+
     /**
      * Set the given inline css styles on this element.
      * Style keys will be converted according to the normal style conversion rules.
