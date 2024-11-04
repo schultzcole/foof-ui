@@ -12,51 +12,108 @@ describe("HtmlBuilder", () => {
         await GlobalRegistrator.unregister()
     })
 
-    it("should build correct html hierarchy", () => {
-        const builder = new HtmlBuilder("div")
-        builder
-            .tag("span", (span) => span.text("a span!"))
-            .tag("a", (a) =>
-                a
-                    .text("a")
-                    .tag("strong", (strong) => strong.text("link!")))
-        builder.mount(document.body)
+    describe("#tag", () => {
+        it("should build correct nested hierarchy", () => {
+            const builder = new HtmlBuilder("div")
+            builder
+                .tag("h1", (h1) => h1.text("A list!"))
+                .tag("ul", (ul) =>
+                    ul
+                        .tag("li", (li) => li.text("Item One"))
+                        .tag("li", (li) => li.text("Item Two")))
+            builder.mount(document.body)
 
-        assertEquals(document.body.innerHTML, "<div><span>a span!</span><a>a<strong>link!</strong></a></div>")
+            assertEquals(
+                document.body.innerHTML,
+                "<div><h1>A list!</h1><ul><li>Item One</li><li>Item Two</li></ul></div>",
+            )
+        })
     })
 
-    it("should build attrs correctly", () => {
-        const builder = new HtmlBuilder("div")
-        builder.attrs({ className: "a-class", hidden: true })
-        builder.mount(document.body)
+    describe("#attrs, #attr", () => {
+        it("should build attrs correctly", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attrs({ className: "a-class", hidden: true })
+            builder.mount(document.body)
 
-        assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
+            assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
+        })
     })
 
-    it("should build data attrs correctly", () => {
-        const builder = new HtmlBuilder("div")
-        builder.data({ someData: "blah", someBooleanData: true })
-        builder.mount(document.body)
+    describe("#data", () => {
+        it("should build data attrs correctly", () => {
+            const builder = new HtmlBuilder("div")
+            builder.data({ foo: "bar", bazQux: true })
+            builder.mount(document.body)
 
-        assertEquals(document.body.innerHTML, `<div data-some-data="blah" data-some-boolean-data="true"></div>`)
+            assertEquals(document.body.innerHTML, `<div data-foo="bar" data-baz-qux="true"></div>`)
+        })
+
+        it("should add single data attribute", () => {
+            const builder = new HtmlBuilder("div")
+            builder.data("foo", "bar")
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, `<div data-foo="bar"></div>`)
+        })
+
+        it("should add result of calling function as data attribute", () => {
+            const builder = new HtmlBuilder("div")
+            builder.data("foo", () => "bar")
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, `<div data-foo="bar"></div>`)
+        })
     })
 
-    it("should build inline styles correctly", () => {
-        const builder = new HtmlBuilder("div")
-        builder.style({ backgroundColor: "red", marginLeft: "10px" })
-        builder.mount(document.body)
+    describe("#class", () => {
+        it("should add class to element", () => {
+            const builder = new HtmlBuilder("div")
+            builder.class("a-class")
+            builder.mount(document.body)
 
-        assertEquals(
-            document.body.innerHTML,
-            `<div style="background-color: red; margin-left: 10px;"></div>`,
-        )
+            assertEquals(document.body.innerHTML, '<div class="a-class"></div>')
+        })
+
+        it("should add class to element when `force` is true", () => {
+            const builder = new HtmlBuilder("div")
+            builder.class("yes", true)
+            builder.class("no", false)
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div class="yes"></div>')
+        })
+
+        it("should add class to element when `force` returns true", () => {
+            const builder = new HtmlBuilder("div")
+            builder.class("yes", () => true)
+            builder.class("no", () => false)
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div class="yes"></div>')
+        })
     })
 
-    it("should build custom css properties correctly", () => {
-        const builder = new HtmlBuilder("div")
-        builder.css({ "--my-css-var": "10px" })
-        builder.mount(document.body)
+    describe("#style", () => {
+        it("should build inline styles correctly", () => {
+            const builder = new HtmlBuilder("div")
+            builder.style({ backgroundColor: "red", marginLeft: "10px" })
+            builder.mount(document.body)
 
-        assertEquals(document.body.innerHTML, `<div style="--my-css-var: 10px;"></div>`)
+            assertEquals(
+                document.body.innerHTML,
+                `<div style="background-color: red; margin-left: 10px;"></div>`,
+            )
+        })
+    })
+
+    describe("#css", () => {
+        it("should build custom css properties correctly", () => {
+            const builder = new HtmlBuilder("div")
+            builder.css({ "--my-css-var": "10px" })
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, `<div style="--my-css-var: 10px;"></div>`)
+        })
     })
 })
