@@ -38,6 +38,14 @@ describe("HtmlBuilder", () => {
 
             assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
         })
+
+        it("should build attrs from function correctly", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attrs(() => ({ className: "a-class", hidden: true }))
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
+        })
     })
 
     describe("#data", () => {

@@ -24,7 +24,19 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * Adds the given attributes to this element.
      * @param attrs the attributes to add to this element
      */
-    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this {
+    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this
+
+    /**
+     * Adds the attributes returned by the given function to this element.
+     * @param func the function that provides the attributes to add to this element
+     */
+    attrs(func: () => Partial<HtmlElementAttrs<TTag>>): this
+
+    attrs(attrs: Partial<HtmlElementAttrs<TTag>> | (() => Partial<HtmlElementAttrs<TTag>>)): this {
+        if (typeof attrs === "function") {
+            attrs = attrs()
+        }
+
         for (const [key, value] of Object.entries(attrs)) {
             this.attr(key as keyof HtmlElementAttrs<TTag> & string, value as AnyData)
         }
