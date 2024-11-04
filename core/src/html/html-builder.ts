@@ -24,19 +24,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * Adds the given attributes to this element.
      * @param attrs the attributes to add to this element
      */
-    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this
-
-    /**
-     * Adds the attributes returned by the given function to this element.
-     * @param func the function that provides the attributes to add to this element
-     */
-    attrs(func: () => Partial<HtmlElementAttrs<TTag>>): this
-
-    attrs(attrs: Partial<HtmlElementAttrs<TTag>> | (() => Partial<HtmlElementAttrs<TTag>>)): this {
-        if (typeof attrs === "function") {
-            attrs = attrs()
-        }
-
+    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this {
         for (const [key, value] of Object.entries(attrs)) {
             this.attr(key as keyof HtmlElementAttrs<TTag> & string, value as AnyData)
         }
@@ -46,29 +34,29 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
 
     /**
      * Set a single arbitrary attribute on this element.
-     * @param key the attribute key
-     * @param value the value to set for the attribute
+     * @param key - the attribute key
+     * @param value - the value to set for the attribute
      */
     attr(key: string, value: AnyData): this
 
     /**
      * Set a single known attribute on this element.
-     * @param key the attribute key
-     * @param value the value to set for the attribute
+     * @param key - the attribute key
+     * @param value - the value to set for the attribute
      */
     attr(key: keyof HtmlElementAttrs<TTag> & string, value: AnyData): this
 
     /**
      * Set a single arbitrary attribute returned by the given function on this element.
-     * @param key the attribute key
-     * @param value the value provider function
+     * @param key - the attribute key
+     * @param value - the value provider function
      */
     attr(key: string, value: () => AnyData): this
 
     /**
      * Set a single known attribute returned by the given function on this element.
-     * @param key the attribute key
-     * @param value the value to set for the attribute
+     * @param key - the attribute key
+     * @param value - the value to set for the attribute
      */
     attr(key: keyof HtmlElementAttrs<TTag> & string, value: () => AnyData): this
 
