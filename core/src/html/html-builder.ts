@@ -58,7 +58,25 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      */
     attr(key: keyof HtmlElementAttrs<TTag> & string, value: AnyData): this
 
-    attr(key: string, value: AnyData): this {
+    /**
+     * Set a single arbitrary attribute returned by the given function on this element.
+     * @param key the attribute key
+     * @param value the value provider function
+     */
+    attr(key: string, value: () => AnyData): this
+
+    /**
+     * Set a single known attribute returned by the given function on this element.
+     * @param key the attribute key
+     * @param value the value to set for the attribute
+     */
+    attr(key: keyof HtmlElementAttrs<TTag> & string, value: () => AnyData): this
+
+    attr(key: string, value: AnyData | (() => AnyData)): this {
+        if (typeof value === "function") {
+            value = value()
+        }
+
         if (value && key in this.element) {
             // deno-lint-ignore no-explicit-any -- just let the element handle whatever gets passed
             this.element[key as keyof HtmlElement<TTag>] = value as any

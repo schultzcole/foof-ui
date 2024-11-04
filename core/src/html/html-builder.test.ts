@@ -30,7 +30,7 @@ describe("HtmlBuilder", () => {
         })
     })
 
-    describe("#attrs, #attr", () => {
+    describe("#attrs", () => {
         it("should build attrs correctly", () => {
             const builder = new HtmlBuilder("div")
             builder.attrs({ className: "a-class", hidden: true })
@@ -45,6 +45,40 @@ describe("HtmlBuilder", () => {
             builder.mount(document.body)
 
             assertEquals(document.body.innerHTML, '<div class="a-class" hidden=""></div>')
+        })
+    })
+
+    describe("#attr", () => {
+        it("should add single known attr", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attr("hidden", true)
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div hidden=""></div>')
+        })
+
+        it("should add single unknown attr", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attr("unknownProperty", "a value")
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div unknownproperty="a value"></div>')
+        })
+
+        it("should add single known attr from function", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attr("hidden", () => true)
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div hidden=""></div>')
+        })
+
+        it("should add single unknown attr from function", () => {
+            const builder = new HtmlBuilder("div")
+            builder.attr("unknownProperty", () => "a value")
+            builder.mount(document.body)
+
+            assertEquals(document.body.innerHTML, '<div unknownproperty="a value"></div>')
         })
     })
 
