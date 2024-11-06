@@ -5,7 +5,7 @@ const REACTIVE_CONTEXT = Symbol("REACTIVE_CONTEXT")
 export type Reactiveable = object
 export type ReactiveProxy<T> = T & { [REACTIVE_CONTEXT]: ReactiveContext }
 
-const proxyMap = new WeakMap()
+const proxyMap = new WeakMap<Reactiveable, ReactiveProxy<Reactiveable>>()
 
 /**
  * Wraps the given state in a reactive proxy.
@@ -13,30 +13,31 @@ const proxyMap = new WeakMap()
  * @returns the reactive state and a {@link ReactiveContext} that can be used to create an effect react to mutations in the state
  */
 export function reactive<T extends Reactiveable>(input: T): { state: ReactiveProxy<T>; ctx: ReactiveContext } {
-    if (proxyMap.has(input)) return proxyMap.get(input)
+    if (proxyMap.has(input)) {
+        const existingProxy = proxyMap.get(input) as ReactiveProxy<T>
+        return { state: existingProxy, ctx: existingProxy[REACTIVE_CONTEXT] }
+    }
 
     const ctx = new ReactiveContext()
-    const proxied = reactiveInner(input, ctx, input, "")
+    const proxied = reactiveInner(input, ctx, "")
     return { state: proxied, ctx }
 }
 
 /** Internal recursive reactive function */
-function reactiveInner<T extends Reactiveable, TRoot extends Reactiveable>(
+function reactiveInner<T extends Reactiveable>(
     input: T,
     ctx: ReactiveContext,
-    root: TRoot,
     path: string,
 ): ReactiveProxy<T> {
-    if (proxyMap.has(input)) return proxyMap.get(input)
+    if (proxyMap.has(input)) return proxyMap.get(input) as ReactiveProxy<T>
 
-    const proxied = new Proxy(input, handlerForContext(root, ctx, path)) as ReactiveProxy<T>
+    const proxied = new Proxy(input, handlerForContext(ctx, path)) as ReactiveProxy<T>
     proxyMap.set(input, proxied)
     return proxied
 }
 
 /** Creates a {@link ProxyHandler} for a reactive proxy */
-function handlerForContext<T extends Reactiveable, TRoot extends Reactiveable>(
-    root: TRoot,
+function handlerForContext<T extends Reactiveable>(
     ctx: ReactiveContext,
     parentPath: string,
 ): ProxyHandler<T> {
@@ -56,7 +57,7 @@ function handlerForContext<T extends Reactiveable, TRoot extends Reactiveable>(
             if (value instanceof Function) {
                 return value
             } else if (value && typeof value === "object") {
-                return reactiveInner(value, ctx, root, thisPath)
+                return reactiveInner(value, ctx, thisPath)
             }
             return value
         },
