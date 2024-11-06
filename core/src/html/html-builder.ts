@@ -1,4 +1,5 @@
-import type { AnyData } from "../util/types.ts"
+import type { AnyData, TOrFunc } from "../util/types.ts"
+import { html } from "./html-tagged-template.ts"
 import type {
     CssAttrs,
     HtmlElement,
@@ -13,8 +14,8 @@ import type {
  * Builder class for creating arbitrary HTML elements
  */
 export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
-    private element: HtmlElement<TTag>
-    private document: Document
+    protected element: HtmlElement<TTag>
+    protected document: Document
     constructor(public thisTag: TTag, document?: Document) {
         this.document = document ?? globalThis.document
         this.element = this.document.createElement(thisTag, {})
@@ -24,7 +25,19 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * Adds the given attributes to this element.
      * @param attrs the attributes to add to this element
      */
-    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this {
+    attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this
+
+    /**
+     * Adds the attributes returned by the given function to this element.
+     * @param func the function that provides the attributes to add to this element
+     */
+    attrs(func: () => Partial<HtmlElementAttrs<TTag>>): this
+
+    attrs(attrs: TOrFunc<Partial<HtmlElementAttrs<TTag>>>): this {
+        if (typeof attrs === "function") {
+            attrs = attrs()
+        }
+
         for (const [key, value] of Object.entries(attrs)) {
             this.attr(key as keyof HtmlElementAttrs<TTag> & string, value as AnyData)
         }
@@ -34,33 +47,33 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
 
     /**
      * Set a single arbitrary attribute on this element.
-     * @param key - the attribute key
-     * @param value - the value to set for the attribute
+     * @param key the attribute key
+     * @param value the value to set for the attribute
      */
     attr(key: string, value: AnyData): this
 
     /**
      * Set a single known attribute on this element.
-     * @param key - the attribute key
-     * @param value - the value to set for the attribute
+     * @param key the attribute key
+     * @param value the value to set for the attribute
      */
     attr(key: keyof HtmlElementAttrs<TTag> & string, value: AnyData): this
 
     /**
      * Set a single arbitrary attribute returned by the given function on this element.
-     * @param key - the attribute key
-     * @param value - the value provider function
+     * @param key the attribute key
+     * @param value the value provider function
      */
     attr(key: string, value: () => AnyData): this
 
     /**
      * Set a single known attribute returned by the given function on this element.
-     * @param key - the attribute key
-     * @param value - the value to set for the attribute
+     * @param key the attribute key
+     * @param value the value to set for the attribute
      */
     attr(key: keyof HtmlElementAttrs<TTag> & string, value: () => AnyData): this
 
-    attr(key: string, value: AnyData | (() => AnyData)): this {
+    attr(key: string, value: TOrFunc<AnyData>): this {
         if (typeof value === "function") {
             value = value()
         }
@@ -86,6 +99,14 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
     data(data: Record<string, AnyData>): this
 
     /**
+     * Sets the data attributes on this element from the return value of the givne function.
+     * Attribute names will be converted according to the `dataset` name conversion rules.
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset#name_conversion
+     * @param data the data attributes to add
+     */
+    data(data: () => Record<string, AnyData>): this
+
+    /**
      * Sets a specific data attribute on this element.
      * The attribute name will be converted according to the `dataset` name conversion rules.
      * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset#name_conversion
@@ -95,7 +116,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
     data(key: string, value: AnyData): this
 
     /**
-     * Sets a specific data attribute on this element to the return value of the given function.
+     * Sets a specific data attribute on this element from the return value of the given function.
      * The attribute name will be converted according to the `dataset` name conversion rules.
      * @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset#name_conversion
      * @param key the data attribute key to add
@@ -103,13 +124,17 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      */
     data(key: string, value: () => AnyData): this
 
-    data(keyOrObj: Record<string, AnyData> | string, value?: AnyData | (() => AnyData)): this {
+    data(keyOrObj: string | TOrFunc<Record<string, AnyData>>, value?: TOrFunc<AnyData>): this {
         if (typeof keyOrObj === "string") {
             if (typeof value === "function") {
                 value = value()
             }
             this.element.dataset[keyOrObj] = stringify(value)
         } else {
+            if (typeof keyOrObj === "function") {
+                keyOrObj = keyOrObj()
+            }
+
             for (const [key, value] of Object.entries(keyOrObj)) {
                 this.element.dataset[key] = stringify(value)
             }
@@ -126,7 +151,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
     /** Adds the given class to this element if `force` returns true */
     class(className: string, force: () => boolean): this
 
-    class(className: string, force?: boolean | (() => boolean)): this {
+    class(className: string, force?: TOrFunc<boolean>): this {
         if (typeof force === "function") {
             force = force()
         } else {
@@ -175,9 +200,26 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * Use with caution. Make sure the source of the html is trusted. No sanitization is applied to the incoming html string.
      * @param html the html to append to this element
      */
-    html(html: string): this {
+    html(html: string): this
+
+    /**
+     * Append the given html tagged template literal to this element.
+     * Use with caution. Make sure the source of the html is trusted. No sanitization is applied to the incoming html string.
+     *
+     * @example
+     * ```ts
+     * builder.html`<strong>Some HTML content!</strong>`
+     * ```
+     */
+    html(strs: TemplateStringsArray, ...values: unknown[]): this
+
+    html(strs: string | TemplateStringsArray, ...values: unknown[]): this {
         const template = this.document.createElement("template")
-        template.innerHTML = html
+        if (typeof strs === "string") {
+            template.innerHTML = strs.trim()
+        } else {
+            template.innerHTML = html(strs, ...values).trim()
+        }
         this.element.appendChild(template.content)
         return this
     }
@@ -193,7 +235,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * @param childTag the tag to append
      * @param attrs attrs to apply to the new element
      */
-    tag<TChild extends HtmlTag>(childTag: TChild, attrs: Partial<HtmlElementAttrs<TTag>>): this
+    tag<TChild extends HtmlTag>(childTag: TChild, attrs: Partial<HtmlElementAttrs<TChild>>): this
 
     /**
      * Append a child element with the given tag to this element, then pass an `HtmlBuilder` for the newly appended element to the given function.
@@ -221,15 +263,6 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         } else {
             return childBuilder
         }
-    }
-
-    /**
-     * Execute the given function with this builder and the internal HtmlElement.
-     * @param func the function to execute
-     */
-    with(func: (builder: this, element: HtmlElement<TTag>) => void): this {
-        func(this, this.element)
-        return this
     }
 
     /**
