@@ -1,4 +1,4 @@
-import type { OmitFunctions, OmitReadonly } from "../util/types.ts"
+import type { AnyData, OmitFunctions, OmitReadonly } from "../util/types.ts"
 
 /** An HTML element type string (lowercase) */
 export type HtmlTag = keyof HTMLElementTagNameMap
@@ -20,3 +20,6 @@ export type HtmlElementAttrs<TTag extends HtmlTag = HtmlTag> = OmitReadonly<Omit
 
 /** Valid CSS attributes */
 export type CssAttrs = OmitReadonly<OmitFunctions<CSSStyleDeclaration>>
+
+/** Data attributes object */
+export type DataAttrs = Record<string, AnyData>
