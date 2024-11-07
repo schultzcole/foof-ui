@@ -1,23 +1,16 @@
 import "./style.css"
-import { setupCounter } from "./counter.ts"
+import { counter } from "./counter.ts"
+import { ReactiveHtmlBuilder } from "@scope/core"
 
-document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-  <div>
-    <img src="/vite-deno.svg" alt="Vite with Deno" />
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="/typescript.svg" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
-
-setupCounter(document.querySelector<HTMLButtonElement>("#counter")!)
+const rootElement = document.getElementById("app")!
+new ReactiveHtmlBuilder("template")
+  .tag("h1", (heading) => heading.text("Foof Demo"))
+  .tag("div", (card) => {
+    card.attrs({ className: "flex-col" })
+      .tag("div", (panel) => {
+        panel.attrs({ className: "panel drop-shadow" })
+          .tag("h2", (h2) => h2.text("Counter"))
+        counter(panel, 42)
+      })
+  })
+  .mount(rootElement)
