@@ -4,13 +4,13 @@ import { ReactiveHtmlBuilder } from "@scope/core"
 
 const rootElement = document.getElementById("app")!
 new ReactiveHtmlBuilder("template")
-  .tag("h1", (heading) => heading.text("Foof Demo"))
-  .tag("div", (card) => {
-    card.attrs({ className: "flex-col" })
-      .tag("div", (panel) => {
-        panel.attrs({ className: "panel drop-shadow" })
-          .tag("h2", (h2) => h2.text("Counter"))
-        counter(panel, 42)
-      })
-  })
-  .mount(rootElement)
+    .tag("h1", (heading) => heading.text("Foof Demo"))
+    .tag("div", (card) => {
+        card.attrs({ className: "flex-col" })
+            .tag("div", (panel) => {
+                panel.attrs({ className: "panel drop-shadow" })
+                    .tag("h2", (h2) => h2.text("Counter"))
+                    .component(counter, 42)
+            })
+    })
+    .mount(rootElement)
