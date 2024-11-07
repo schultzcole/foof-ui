@@ -7,5 +7,6 @@
         "semiColons": false,
         "indentWidth": 4,
         "lineWidth": 120
-    }
+    },
+    "exclude": ["**/.vite/", "**/dist/"]
 }
