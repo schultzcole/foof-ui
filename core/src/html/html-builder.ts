@@ -1,4 +1,4 @@
-import type { AnyData, TOrFunc } from "../util/types.ts"
+import type { AnyData, Component, ComponentParameters, TOrFunc } from "../util/types.ts"
 import { html } from "./html-tagged-template.ts"
 import type {
     CssAttrs,
@@ -274,6 +274,15 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         } else {
             return childBuilder
         }
+    }
+
+    component<TBuilder extends HtmlBuilder, TComp extends Component<TBuilder>>(
+        this: TBuilder,
+        comp: TComp,
+        ...args: ComponentParameters<TBuilder, TComp>
+    ): this {
+        comp(this, ...args)
+        return this as unknown as this
     }
 
     /**
