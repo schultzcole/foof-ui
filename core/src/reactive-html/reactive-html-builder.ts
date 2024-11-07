@@ -1,8 +1,8 @@
-import { ReactiveContext } from "../../mod.ts"
+import type { ReactiveContext } from "../../mod.ts"
 import HtmlBuilder from "../html/html-builder.ts"
-import type { HtmlElement, HtmlElementAttrs, HtmlTag } from "../html/html-types.ts"
+import type { HtmlElementAttrs, HtmlTag } from "../html/html-types.ts"
 import { _ambientEffect } from "../reactive/reactive-proxy.ts"
-import type { AnyData, OmitFunctions, TOrFunc } from "../util/types.ts"
+import type { AnyData, TOrFunc } from "../util/types.ts"
 
 export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends HtmlBuilder<TTag> {
     // TODO prevent effect leak when element is removed from page
@@ -96,7 +96,7 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
         ctx.effect(() => {
             const template = new ReactiveHtmlBuilder("template", this.document)
             func(template)
-            effectContainer.element.replaceChildren(...template.element.childNodes)
+            effectContainer.element.replaceChildren(...template.element.content.childNodes)
         })
 
         return this

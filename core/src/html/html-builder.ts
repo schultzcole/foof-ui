@@ -21,6 +21,14 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         this.element = this.document.createElement(thisTag, {})
     }
 
+    protected appendChild(node: Node) {
+        if (this.element instanceof HTMLTemplateElement) {
+            this.element.content.appendChild(node)
+        } else {
+            this.element.appendChild(node)
+        }
+    }
+
     /**
      * Adds the given attributes to this element.
      * @param attrs the attributes to add to this element
@@ -191,7 +199,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      */
     text(text: string): this {
         const node = this.document.createTextNode(text)
-        this.element.appendChild(node)
+        this.appendChild(node)
         return this
     }
 
@@ -220,7 +228,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         } else {
             template.innerHTML = html(strs, ...values).trim()
         }
-        this.element.appendChild(template.content)
+        this.appendChild(template.content)
         return this
     }
 
@@ -252,7 +260,10 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
         other?: Partial<HtmlElementAttrs<TChild>> | ((child: HtmlBuilder<TChild>) => void),
     ): this | HtmlBuilder<TChild> {
         const childBuilder = new (this.constructor as typeof HtmlBuilder)(childTag, this.document)
-        this.element.appendChild(childBuilder.element)
+
+        this.appendChild(
+            childBuilder.element instanceof HTMLTemplateElement ? childBuilder.element.content : childBuilder.element,
+        )
 
         if (other && typeof other === "function") {
             other(childBuilder)
@@ -299,11 +310,7 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
      * @param mountElement the html element into which to mount this element
      */
     mount(mountElement: HTMLElement) {
-        if (this.element instanceof HTMLTemplateElement) {
-            mountElement.appendChild(this.element.content)
-        } else {
-            mountElement.appendChild(this.element)
-        }
+        mountElement.appendChild(this.element instanceof HTMLTemplateElement ? this.element.content : this.element)
     }
 }
 
