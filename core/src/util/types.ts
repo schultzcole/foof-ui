@@ -22,9 +22,14 @@ export type AnyData = string | number | bigint | boolean | undefined | null
 /** Either T or a function that takes no arguments and returns a T */
 export type TOrFunc<T> = T | (() => T)
 
-export type Component<TRootBuilder extends HtmlBuilder, TArgs extends any[] = any[]> = (
+/** A component function */
+export type Component<TRootBuilder extends HtmlBuilder> = (
     root: TRootBuilder,
-    ...args: TArgs
+    // deno-lint-ignore no-explicit-any -- allow any params for component types
+    ...args: any[]
 ) => void
-export type ComponentParameters<TRootBuilder extends HtmlBuilder, T extends Component<TRootBuilder>> = T extends
-    Component<TRootBuilder, infer TArgs> ? TArgs : never
+
+/** Extracts the non-HtmlBuilder params of the given component function */
+// deno-lint-ignore no-explicit-any -- Don't care about root builder type; just want the type of the rest of the args
+export type ComponentParameters<T extends Component<any>> = T extends (root: any, ...args: infer TArgs) => void ? TArgs
+    : never

@@ -233,56 +233,37 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
     }
 
     /**
-     * Append a child element with the given tag to this element, then return an `HtmlBuilder` for the newly appended element.
-     * @param childTag the tag to append
-     */
-    tag<TChild extends HtmlTag>(childTag: TChild): HtmlBuilder<TChild>
-
-    /**
-     * Append a child element with the given tag to this element.
-     * @param childTag the tag to append
-     * @param attrs attrs to apply to the new element
-     */
-    tag<TChild extends HtmlTag>(childTag: TChild, attrs: Partial<HtmlElementAttrs<TChild>>): this
-
-    /**
      * Append a child element with the given tag to this element, then pass an `HtmlBuilder` for the newly appended element to the given function.
      * @param childTag the tag to append
      * @param func a function to call with an `HtmlBuilder` for the appended element.
      */
     tag<TChild extends HtmlTag>(
         childTag: TChild,
-        func: (child: HtmlBuilder<TChild>) => void,
-    ): this
-
-    tag<TChild extends HtmlTag>(
-        childTag: TChild,
-        other?: Partial<HtmlElementAttrs<TChild>> | ((child: HtmlBuilder<TChild>) => void),
-    ): this | HtmlBuilder<TChild> {
+        func?: (child: HtmlBuilder<TChild>) => void,
+    ): this {
         const childBuilder = new (this.constructor as typeof HtmlBuilder)(childTag, this.document)
 
         this.appendChild(
             childBuilder.element instanceof HTMLTemplateElement ? childBuilder.element.content : childBuilder.element,
         )
 
-        if (other && typeof other === "function") {
-            other(childBuilder)
-            return this
-        } else if (other && typeof other === "object") {
-            childBuilder.attrs(other)
-            return this
-        } else {
-            return childBuilder
+        if (func) {
+            func(childBuilder)
         }
+        return this
     }
 
-    component<TBuilder extends HtmlBuilder, TComp extends Component<TBuilder>>(
-        this: TBuilder,
+    /**
+     * Calls the given component function on this HtmlBuilder.
+     * @param comp - the component to call
+     * @param args - args for the component
+     */
+    component<TComp extends Component<this>>(
         comp: TComp,
-        ...args: ComponentParameters<TBuilder, TComp>
+        ...args: ComponentParameters<TComp>
     ): this {
         comp(this, ...args)
-        return this as unknown as this
+        return this
     }
 
     /**

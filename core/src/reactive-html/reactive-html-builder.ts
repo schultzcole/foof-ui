@@ -4,7 +4,11 @@ import type { HtmlElementAttrs, HtmlTag } from "../html/html-types.ts"
 import { _ambientEffect } from "../reactive/reactive-proxy.ts"
 import type { AnyData, TOrFunc } from "../util/types.ts"
 
-export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends HtmlBuilder<TTag> {
+interface ReactiveHtmlBuilder {
+    tag<TChild extends HtmlTag>(childTag: TChild, func?: (child: ReactiveHtmlBuilder<TChild>) => void): this
+}
+
+class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends HtmlBuilder<TTag> {
     // TODO prevent effect leak when element is removed from page
 
     override attrs(attrs: Partial<HtmlElementAttrs<TTag>>): this
@@ -15,9 +19,8 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
                 super.attrs(attrs)
             })
             return this
-        } else {
-            return super.attrs(attrs)
         }
+        return super.attrs(attrs)
     }
 
     override attr(key: string, value: AnyData): this
@@ -30,9 +33,8 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
                 super.attr(key, value)
             })
             return this
-        } else {
-            return super.attr(key, value)
         }
+        return super.attr(key, value)
     }
 
     override data(data: Record<string, AnyData>): this
@@ -45,17 +47,14 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
                 super.data(keyOrObj)
             })
             return this
-        } else if (typeof keyOrObj === "string") {
-            if (typeof value === "function") {
-                _ambientEffect(() => {
-                    super.data(keyOrObj, value)
-                })
-                return this
-            }
-            return super.data(keyOrObj, value)
-        } else {
-            return super.data(keyOrObj)
+        } else if (typeof keyOrObj === "string" && typeof value === "function") {
+            _ambientEffect(() => {
+                super.data(keyOrObj, value)
+            })
+            return this
         }
+        // @ts-expect-error -- passthrough to base overload
+        return super.data(keyOrObj, value)
     }
 
     override class(className: string): this
@@ -67,22 +66,9 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
                 super.class(className, force)
             })
             return this
-        } else if (force !== undefined) {
-            return super.class(className, force)
-        } else {
-            return super.class(className)
         }
-    }
-
-    override tag<TChild extends HtmlTag>(childTag: TChild): ReactiveHtmlBuilder<TChild>
-    override tag<TChild extends HtmlTag>(childTag: TChild, attrs: Partial<HtmlElementAttrs<TChild>>): this
-    override tag<TChild extends HtmlTag>(childTag: TChild, func: (child: ReactiveHtmlBuilder<TChild>) => void): this
-    override tag<TChild extends HtmlTag>(
-        childTag: TChild,
-        other?: Partial<HtmlElementAttrs<TChild>> | ((child: ReactiveHtmlBuilder<TChild>) => void),
-    ): this | ReactiveHtmlBuilder<TChild> {
-        // @ts-expect-error -- base class passthrough
-        return super.tag(childTag, other)
+        // @ts-expect-error -- passthrough to base overload
+        return super.class(className, force)
     }
 
     /**
@@ -92,13 +78,15 @@ export default class ReactiveHtmlBuilder<TTag extends HtmlTag = HtmlTag> extends
      * @param func - the block to make reactive.
      */
     reactive(ctx: ReactiveContext, func: (template: ReactiveHtmlBuilder<"template">) => void): this {
-        const effectContainer = this.tag("div").style({ display: "contents" })
-        ctx.effect(() => {
-            const template = new ReactiveHtmlBuilder("template", this.document)
-            func(template)
-            effectContainer.element.replaceChildren(...template.element.content.childNodes)
+        return this.tag("div", (effectContainer) => {
+            effectContainer.style({ display: "contents" })
+            ctx.effect(() => {
+                const template = new ReactiveHtmlBuilder("template", this.document)
+                func(template)
+                effectContainer.element.replaceChildren(...template.element.content.childNodes)
+            })
         })
-
-        return this
     }
 }
+
+export default ReactiveHtmlBuilder
