@@ -1,5 +1,5 @@
 import type { WritableKeysOf } from "type-fest"
-import { HtmlBuilder, ReactiveHtmlBuilder } from "../../mod.ts"
+import type HtmlBuilder from "../html/html-builder.ts"
 
 /** Returns all keys of T where T[K] is not a function */
 export type NonFunctionKeysOf<T> = Exclude<

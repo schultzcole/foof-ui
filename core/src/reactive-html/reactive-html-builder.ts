@@ -1,4 +1,4 @@
-import type { ReactiveContext } from "../../mod.ts"
+import type ReactiveContext from "../reactive/reactive-context.ts"
 import HtmlBuilder from "../html/html-builder.ts"
 import type { HtmlElementAttrs, HtmlTag } from "../html/html-types.ts"
 import { _ambientEffect } from "../reactive/reactive-proxy.ts"
