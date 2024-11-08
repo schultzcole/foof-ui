@@ -86,10 +86,12 @@ export default class HtmlBuilder<TTag extends HtmlTag = HtmlTag> {
             value = value()
         }
 
-        if (value && key in this.element) {
+        if (key in this.element) {
+            // Known attribute key
             // deno-lint-ignore no-explicit-any -- just let the element handle whatever gets passed
             this.element[key as keyof HtmlElement<TTag>] = value as any
-        } else if (value) {
+        } else if (value != undefined) {
+            // Unknown attribute key
             // deno-lint-ignore no-explicit-any -- just let the element handle whatever gets passed
             this.element.setAttribute(key, value as any)
         } else {
