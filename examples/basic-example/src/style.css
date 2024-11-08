@@ -12,10 +12,24 @@
         "Helvetica Neue",
         sans-serif;
     color: #1f1f1f;
+
+    --accent-color: #dd6026;
+    --gap: 12px;
+
+    font-size: 13pt;
 }
 
 * {
     box-sizing: border-box;
+}
+
+*:focus {
+    outline: none;
+}
+
+*:focus-visible {
+    outline: 2px var(--accent-color) solid;
+    outline-offset: 2px;
 }
 
 body {
@@ -28,6 +42,7 @@ body {
 #app {
     width: min(100% - 3rem, var(--container-max, 72ch));
     margin-inline: auto;
+    margin-bottom: 50px;
 }
 
 h1 {
@@ -38,25 +53,23 @@ h1, h2, h3, h4, h5, h6, p {
     margin-top: 0;
 }
 
-.flex-col {
+.flex {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
 }
 
-.flex-row-spaced {
-    display: flex;
+.flex-row { flex-direction: row; }
+
+.flex-col { flex-direction: column; }
+
+.flex-gap { gap: 12px; }
+
+.flex-even {
     justify-content: space-evenly;
     align-items: center;
-    gap: 12px;
 }
 
 .drop-shadow {
     box-shadow: 0 12px 12px rgba(0 0 0 / 1%);
-}
-
-.small-drop-shadow {
-    box-shadow: 0 6px 6px rgba(0 0 0 / 5%);
 }
 
 .panel {
@@ -69,9 +82,27 @@ h1, h2, h3, h4, h5, h6, p {
 button {
     border: none;
     border-radius: 4px;
-    background-color: #dd6026;
+    background-color: var(--accent-color);
     color: #eee;
-    padding: 1em 1.5em;
+    padding: .2em .6em;
+    font-size: 1em;
     font-weight: bold;
     cursor: pointer;
+}
+
+label[for] {
+    cursor: pointer;
+}
+
+input {
+    &[type=text], &[type=number] {
+        border: none;
+        border-radius: 4px;
+        padding: 8px;
+        background-color: rgba(255 255 255 / 40%);
+    }
+}
+
+label + input {
+    margin-left: var(--gap);
 }
